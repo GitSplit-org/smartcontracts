@@ -10,17 +10,26 @@ contract MultiWallet {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can perform this operation");
+        require(
+            msg.sender == owner,
+            "Only the owner can perform this operation"
+        );
         _;
     }
 
-    function deposit(address[] memory receivers, uint256[] memory amounts) payable public onlyOwner {
-        require(receivers.length == amounts.length, "Receiver and amount arrays must have the same length");
+    function deposit(
+        address[] memory receivers,
+        uint256[] memory amounts
+    ) public payable onlyOwner {
+        require(
+            receivers.length == amounts.length,
+            "Receiver and amount arrays must have the same length"
+        );
         uint256 amt = 0;
         for (uint256 index = 0; index < amounts.length; index++) {
             amt += amounts[index];
         }
-        require(amt == msg.value , "insufficient value");
+        require(amt == msg.value, "insufficient value");
         for (uint256 i = 0; i < receivers.length; i++) {
             address receiver = receivers[i];
             uint256 amount = amounts[i];
