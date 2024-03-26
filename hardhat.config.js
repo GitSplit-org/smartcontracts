@@ -2,25 +2,35 @@
 
 require("dotenv").config();
 
-require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-verify");
 
-const metamask_private_key = process.env.METAMASK_PRIVATE_KEY;
-const maticmum_rpc_url = process.env.MATICMUM_RPC_URL;
-const polygonscan_api_key = process.env.POLYGONSCAN_API_KEY;
+const {
+  API_URL_POLYGON,
+  API_URL_SEPLOIA,
+  PRIVATE_KEY,
+  POLYGONSCAN_API_KEY,
+  ETHERSCAN_API_KEY,
+} = process.env;
 module.exports = {
-  solidity: "0.8.19",
+  solidity: "0.8.24",
 
   networks: {
     maticmum: {
       networkId: 80001,
-      url: maticmum_rpc_url,
-      accounts: [metamask_private_key],
+      url: API_URL_POLYGON,
+      accounts: [`0x${PRIVATE_KEY}`],
+    },
+    sepolia: {
+      networkId: 11155111,
+      url: API_URL_SEPLOIA,
+      accounts: [`0x${PRIVATE_KEY}`],
     },
   },
   etherscan: {
     apiKey: {
-      polygonMumbai: polygonscan_api_key,
-      // sepolia : ETHERSCAN_API_KEY,
+      polygonMumbai: POLYGONSCAN_API_KEY,
+      sepolia: ETHERSCAN_API_KEY,
       // bscTestnet : BSCSCAN_API_KEY,
       // optimisticGoerli: OPTISCAN_API_KEY,
       // arbitrumGoerli: ARBISCAN_API_KEY,
