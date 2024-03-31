@@ -19,17 +19,22 @@ contract MultiWallet {
         _;
     }
 
-    function assignAddressesToUsernames(
-        string[] memory usernames,
-        address[] memory walletAddresses
+    function assignAddressToUsername(
+        string memory username,
+        address walletAddress
     ) public onlyOwner {
         require(
-            usernames.length == walletAddresses.length,
-            "Arrays must have the same length"
+            usernameToAddress[username] == address(0),
+            "Username already has an assigned address"
         );
 
-        for (uint256 i = 0; i < usernames.length; i++) {
-            usernameToAddress[usernames[i]] = walletAddresses[i];
+        usernameToAddress[username] = walletAddress;
+
+        // Transfer funds from temporary address to the assigned wallet address
+        uint256 amount = balances[temporaryAddress][username];
+        if (amount > 0) {
+            balances[temporaryAddress][username] = 0; // Clear the balance from the temporary address
+            balances[walletAddress][username] += amount; // Add the balance to the assigned wallet address
         }
     }
 
@@ -48,35 +53,49 @@ contract MultiWallet {
             "Arrays must have the same length"
         );
 
+        uint256 totalAmount = 0;
+
+        for (uint256 i = 0; i < usernames.length; i++) {
+            string memory username = usernames[i];
+            uint256 amount = amountsInEther[i];
+            totalAmount += amount;
+
+            address receiver = usernameToAddress[username];
+
+            if (receiver == address(0)) {
+                // Wallet address not assigned, store funds in the contract against the username
+                temporaryAddress = address(this);
+                balances[temporaryAddress][username] += amount;
+            } else {
+                // Wallet address assigned, transfer funds directly
+                balances[receiver][username] += amount;
+            }
+        }
+
+        require(
+            msg.value == totalAmount,
+            "Sent value must match the sum of specified amounts"
+        );
+
+        // Transfer funds to assigned wallet addresses
         for (uint256 i = 0; i < usernames.length; i++) {
             string memory username = usernames[i];
             uint256 amount = amountsInEther[i];
 
             address receiver = usernameToAddress[username];
 
-            if (receiver == address(0)) {
-                // Wallet address not assigned, store funds to temporary address
-                temporaryAddress = address(this);
-                balances[temporaryAddress][username] += amount;
-            } else {
-                // Wallet address assigned, transfer funds directly
-                require(
-                    amount == msg.value,
-                    "Sent value must match the specified amount"
-                );
-                balances[receiver][username] += amount;
+            if (receiver != address(0)) {
                 payable(receiver).transfer(amount);
             }
         }
     }
 
-    function withdraw(string memory username, uint256 amountInEther) public {
+    function withdraw(string memory username, uint256 amountInWei) public {
         address receiver = usernameToAddress[username];
         require(
             receiver == msg.sender,
             "You can only withdraw funds for your assigned username"
         );
-        uint256 amountInWei = amountInEther * 1 ether; // Convert ether to wei
         require(
             balances[receiver][username] >= amountInWei,
             "Insufficient balance"
