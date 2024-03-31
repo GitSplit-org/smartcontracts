@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// Author: @janedoe
 pragma solidity ^0.8.24;
 
 contract MultiWallet {
@@ -20,11 +19,24 @@ contract MultiWallet {
         _;
     }
 
-    function assignAddressToUsername(
-        string memory username,
-        address walletAddress
-    ) public {
-        usernameToAddress[username] = walletAddress;
+    function assignAddressesToUsernames(
+        string[] memory usernames,
+        address[] memory walletAddresses
+    ) public onlyOwner {
+        require(
+            usernames.length == walletAddresses.length,
+            "Arrays must have the same length"
+        );
+
+        for (uint256 i = 0; i < usernames.length; i++) {
+            usernameToAddress[usernames[i]] = walletAddresses[i];
+        }
+    }
+
+    function getAddressForUsername(
+        string memory username
+    ) public view returns (address) {
+        return usernameToAddress[username];
     }
 
     function deposit(
@@ -58,17 +70,20 @@ contract MultiWallet {
         }
     }
 
-function withdraw(string memory username, uint256 amountInEther) public {
-    address receiver = usernameToAddress[username];
-    require(
-        receiver == msg.sender,
-        "You can only withdraw funds for your assigned username"
-    );
-    uint256 amountInWei = amountInEther * 1 ether; // Convert ether to wei
-    require(balances[receiver][username] >= amountInWei, "Insufficient balance");
-    balances[receiver][username] -= amountInWei;
-    payable(msg.sender).transfer(amountInWei);
-}
+    function withdraw(string memory username, uint256 amountInEther) public {
+        address receiver = usernameToAddress[username];
+        require(
+            receiver == msg.sender,
+            "You can only withdraw funds for your assigned username"
+        );
+        uint256 amountInWei = amountInEther * 1 ether; // Convert ether to wei
+        require(
+            balances[receiver][username] >= amountInWei,
+            "Insufficient balance"
+        );
+        balances[receiver][username] -= amountInWei;
+        payable(msg.sender).transfer(amountInWei);
+    }
 
     function getBalance(string memory username) public view returns (uint256) {
         address receiver = usernameToAddress[username];
