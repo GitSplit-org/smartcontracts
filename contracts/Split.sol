@@ -1,11 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.25;
 
 contract MultiWallet {
     address public owner;
     address public temporaryAddress; // Temporary address to store funds if wallet is not assigned
     mapping(string => address) public usernameToAddress;
     mapping(address => mapping(string => uint256)) public balances;
+
+    event AddressAssigned(string indexed username, address walletAddress);
+    event FundsDeposited(
+        address indexed receiver,
+        string indexed username,
+        uint256 amount
+    );
+    event FundsWithdrawn(
+        address indexed receiver,
+        string indexed username,
+        uint256 amount
+    );
 
     constructor() {
         owner = msg.sender;
@@ -29,12 +41,14 @@ contract MultiWallet {
         );
 
         usernameToAddress[username] = walletAddress;
+        emit AddressAssigned(username, walletAddress);
 
         // Transfer funds from temporary address to the assigned wallet address
         uint256 amount = balances[temporaryAddress][username];
         if (amount > 0) {
             balances[temporaryAddress][username] = 0; // Clear the balance from the temporary address
             balances[walletAddress][username] += amount; // Add the balance to the assigned wallet address
+            emit FundsDeposited(walletAddress, username, amount);
         }
     }
 
@@ -69,6 +83,7 @@ contract MultiWallet {
             } else {
                 // Wallet address assigned, transfer funds directly
                 balances[receiver][username] += amount;
+                emit FundsDeposited(receiver, username, amount);
             }
         }
 
@@ -102,6 +117,7 @@ contract MultiWallet {
         );
         balances[receiver][username] -= amountInWei;
         payable(msg.sender).transfer(amountInWei);
+        emit FundsWithdrawn(receiver, username, amountInWei);
     }
 
     function getBalance(string memory username) public view returns (uint256) {
